@@ -2,6 +2,25 @@
   "name": "torque-logger",
   "version": "1.0.0",
   "description": "Enterprise-grade Discord logging and anti-nuke bot",
+  "author": "Intruder0007",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/intruder0007/Torque-Logger-.git"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "logger",
+    "anti-nuke",
+    "moderation",
+    "security",
+    "enterprise"
+  ],
+  "bugs": {
+    "url": "https://github.com/intruder0007/Torque-Logger-/issues"
+  },
+  "homepage": "https://github.com/intruder0007/Torque-Logger-",
   "main": "src/index.js",
   "type": "module",
   "scripts": {

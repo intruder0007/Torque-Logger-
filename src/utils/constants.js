@@ -62,32 +62,32 @@ export const LogChannelNames = {
 };
 
 // ── Emoji Map ─────────────────────────────────────────────────────────────────
-// Upload custom emojis at: discord.com/developers/applications → YOUR APP → Emojis
-// Replace the placeholder IDs with your actual emoji IDs after uploading.
+// All emojis are now 100% Unicode for Component V2 compatibility.
+// These are guaranteed to render correctly across all clients and layouts.
 export const Emojis = {
-  // ── Animated status indicators ──
-  online:          '<a:online:1234000000000000001>',
-  loading:         '<a:loading:1234000000000000002>',
-  success:         '<a:success:1234000000000000003>',
-  error:           '<a:error:1234000000000000004>',
-  warning:         '<a:warning:1234000000000000005>',
-  shield:          '<a:shield:1234000000000000006>',
-  nuke:            '<a:nuke:1234000000000000007>',
+  // ── Status indicators ──
+  online:          '🟢',
+  loading:         '⚙️',
+  success:         '✅',
+  error:           '❌',
+  warning:         '⚠️',
+  shield:          '🛡️',
+  nuke:            '🚨',
   // ── Category badges ──
-  moderation:      '<:moderation:1234000000000000008>',
-  message:         '<:message:1234000000000000009>',
-  voice:           '<:voice:1234000000000000010>',
-  member:          '<:member:1234000000000000011>',
-  leave:           '<:leave:1234000000000000012>',
-  automod:         '<:automod:1234000000000000013>',
-  webhook:         '<:webhook:1234000000000000014>',
-  torque:          '<:torque:1234000000000000015>',
-  // ── New: Profile & Presence ──
-  presence:        '<:presence:1234000000000000016>',
-  profile:         '<:profile:1234000000000000017>',
-  activity:        '<:activity:1234000000000000018>',
-  avatar:          '<:avatar:1234000000000000019>',
-  bio:             '<:bio:1234000000000000020>',
+  moderation:      '🔨',
+  message:         '💬',
+  voice:           '🔊',
+  member:          '👥',
+  leave:           '🚪',
+  automod:         '🤖',
+  webhook:         '🔗',
+  torque:          '⚙️',
+  // ── Profile & Presence ──
+  presence:        '🌐',
+  profile:         '👤',
+  activity:        '📋',
+  avatar:          '📷',
+  bio:             '📝',
   // ── Presence status icons ──
   status_online:   '🟢',
   status_idle:     '🟡',
@@ -135,11 +135,11 @@ export const AntiNukeActions = {
 
 // ── Presence Status Labels ─────────────────────────────────────────────────────
 export const PresenceStatus = {
-  online:    { label: 'Online',    emoji: Emojis.status_online,  color: Colors.ONLINE  },
-  idle:      { label: 'Idle',      emoji: Emojis.status_idle,    color: Colors.IDLE    },
-  dnd:       { label: 'Do Not Disturb', emoji: Emojis.status_dnd, color: Colors.DND   },
-  offline:   { label: 'Offline',   emoji: Emojis.status_offline, color: Colors.OFFLINE },
-  invisible: { label: 'Invisible', emoji: Emojis.status_offline, color: Colors.OFFLINE },
+  online:    { label: 'Online',         emoji: '🟢', color: Colors.ONLINE  },
+  idle:      { label: 'Idle',           emoji: '🟡', color: Colors.IDLE    },
+  dnd:       { label: 'Do Not Disturb', emoji: '🔴', color: Colors.DND     },
+  offline:   { label: 'Offline',        emoji: '⚫', color: Colors.OFFLINE },
+  invisible: { label: 'Invisible',      emoji: '⚫', color: Colors.OFFLINE },
 };
 
 // ── Rate Limiter Config ───────────────────────────────────────────────────────
