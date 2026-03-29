@@ -1,0 +1,21 @@
+{
+  "name": "torque-logger",
+  "version": "1.0.0",
+  "description": "Enterprise-grade Discord logging and anti-nuke bot",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "register": "node src/scripts/registerCommands.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "firebase-admin": "^12.3.0",
+    "dotenv": "^16.4.5",
+    "winston": "^3.13.0"
+  }
+}
