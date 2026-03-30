@@ -124,6 +124,7 @@ function buildComponentsV2Payload(opts) {
     image,
     category,
     buttons = [],
+    extraActionRows = [],
     section,
     session,
     content,
@@ -188,6 +189,10 @@ function buildComponentsV2Payload(opts) {
   const actionButtons = normalizeButtons(buttons);
   if (actionButtons.length) {
     container.addActionRowComponents(new ActionRowBuilder().addComponents(actionButtons));
+  }
+
+  if (extraActionRows.length) {
+    container.addActionRowComponents(...extraActionRows);
   }
 
   return {
@@ -281,8 +286,13 @@ export function buildPresencePayload({ user, oldStatus, newStatus, sessionData }
 
 export function userField(user) {
   if (!user) return '`Unknown`';
-  const tag = user.globalName ?? user.tag ?? user.username ?? 'Unknown';
-  return `**${tag}** (<@${user.id}>)`;
+  const tag = user.displayName ?? user.globalName ?? user.tag ?? user.username ?? 'Unknown';
+  return `**${tag}** (\`${user.id}\`)`;
+}
+
+export function userLabel(user) {
+  if (!user) return 'Unknown';
+  return user.displayName ?? user.globalName ?? user.tag ?? user.username ?? user.id ?? 'Unknown';
 }
 
 export function listField(items = [], fallback = '`None`') {

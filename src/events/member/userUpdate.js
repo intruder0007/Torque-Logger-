@@ -1,6 +1,6 @@
 import { Events } from 'discord.js';
 import { dispatch } from '../../services/logDispatcher.js';
-import { buildPayload, timestampField, yesNo, userField } from '../../utils/embedBuilder.js';
+import { buildPayload, timestampField, yesNo, userField, userLabel } from '../../utils/embedBuilder.js';
 import { SectionBuilder } from '../../utils/sectionBuilder.js';
 import { LogChannelKeys, Colors, Emojis } from '../../utils/constants.js';
 
@@ -93,7 +93,7 @@ export async function execute(client, oldUser, newUser) {
     .addField('Decoration', latestUser.avatarDecorationURL?.() ?? '`None`');
 
   const description = [
-    `${Emojis.profile} Global profile metadata changed for ${latestUser}.`,
+    `${Emojis.profile} Global profile metadata changed for ${userLabel(latestUser)}.`,
     avatarChanged ? `${Emojis.camera} Avatar asset changed.` : null,
     bannerChanged ? `${Emojis.star} Banner asset changed.` : null,
     bioChanged ? `${Emojis.bio} Bio text changed.` : null,

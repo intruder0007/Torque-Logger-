@@ -3,6 +3,7 @@ import { readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import logger from '../utils/logger.js';
+import { handleHelpComponent } from '../commands/security/generated.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -12,10 +13,19 @@ export async function loadCommands(client) {
 
   for (const folder of readdirSync(commandsPath)) {
     const folderPath = join(commandsPath, folder);
-    const files = readdirSync(folderPath).filter(f => f.endsWith('.js'));
+    const files = readdirSync(folderPath).filter(f => f.endsWith('.js') && f !== 'registry.js');
 
     for (const file of files) {
       const command = await import(`file://${join(folderPath, file)}`);
+      if (Array.isArray(command.commands)) {
+        for (const item of command.commands) {
+          if (!item?.data || !item?.execute) continue;
+          client.commands.set(item.data.name, item);
+          logger.info(`Loaded command: ${item.data.name}`);
+        }
+        continue;
+      }
+
       if (!command.data || !command.execute) {
         logger.warn(`Command ${file} missing data or execute export`);
         continue;
@@ -28,6 +38,10 @@ export async function loadCommands(client) {
 
 export function handleInteraction(client) {
   client.on('interactionCreate', async interaction => {
+    if ((interaction.isStringSelectMenu() || interaction.isButton()) && interaction.customId.startsWith('help:')) {
+      return handleHelpComponent(interaction);
+    }
+
     if (!interaction.isChatInputCommand()) return;
 
     const command = client.commands.get(interaction.commandName);

@@ -54,7 +54,7 @@ export async function execute(client, auditEntry, guild) {
         title = 'Member Kicked';
         emoji = Emojis.leave;
         color = Colors.ORANGE;
-        sb.addField('👤 Target', `<@${targetId}> \`${targetId}\``);
+        sb.addField('👤 Target', `User ID \`${targetId}\``);
         break;
 
       case AuditLogEvent.MemberBanAdd:
@@ -63,7 +63,7 @@ export async function execute(client, auditEntry, guild) {
         title = action === AuditLogEvent.MemberBanAdd ? 'Member Banned' : 'Member Unbanned';
         emoji = action === AuditLogEvent.MemberBanAdd ? Emojis.leave : Emojis.success;
         color = action === AuditLogEvent.MemberBanAdd ? Colors.RED : Colors.GREEN;
-        sb.addField('👤 Target', `<@${targetId}> \`${targetId}\``);
+        sb.addField('👤 Target', `User ID \`${targetId}\``);
         break;
 
       case AuditLogEvent.WebhookCreate:

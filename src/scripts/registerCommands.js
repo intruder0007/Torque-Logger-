@@ -13,10 +13,15 @@ async function registerCommands() {
 
   for (const folder of readdirSync(commandsPath)) {
     const folderPath = join(commandsPath, folder);
-    const files = readdirSync(folderPath).filter(f => f.endsWith('.js'));
+    const files = readdirSync(folderPath).filter(f => f.endsWith('.js') && f !== 'registry.js');
     for (const file of files) {
       const command = await import(`file://${join(folderPath, file)}`);
-      if (command.data) {
+      if (Array.isArray(command.commands)) {
+        for (const item of command.commands) {
+          commands.push(item.data.toJSON());
+          logger.info(`Queued command: ${item.data.name}`);
+        }
+      } else if (command.data) {
         commands.push(command.data.toJSON());
         logger.info(`Queued command: ${command.data.name}`);
       }

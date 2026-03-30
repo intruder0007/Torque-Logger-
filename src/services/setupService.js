@@ -154,7 +154,7 @@ async function sendSourceAnnouncement(sourceGuild, targetGuild, executor) {
     fields: [
       { name: `${Emojis.moderation} Source`,  value: `**${sourceGuild.name}**\n\`${sourceGuild.id}\``, inline: true },
       { name: `${Emojis.lock} Target`,       value: `**${targetGuild.name}**\n\`${targetGuild.id}\``, inline: true },
-      { name: `${Emojis.member} Admin`,      value: executor ? `<@${executor.id}>` : '`Unknown`',       inline: true },
+      { name: `${Emojis.member} Admin`,      value: executor ? `**${executor.tag ?? executor.username ?? executor.id}** (\`${executor.id}\`)` : '`Unknown`',       inline: true },
     ],
   });
 

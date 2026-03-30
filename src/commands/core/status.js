@@ -37,7 +37,7 @@ export async function execute(interaction) {
           ? `Bans: \`${nuke.banThreshold}\` | Kicks: \`${nuke.kickThreshold}\` | Channel Del: \`${nuke.channelDeleteThreshold}\` | Role Del: \`${nuke.roleDeleteThreshold}\``
           : 'Default',
       },
-      { name: 'Setup By', value: config.setupBy ? `<@${config.setupBy}>` : 'Unknown', inline: true },
+      { name: 'Setup By', value: config.setupBy ? `\`${config.setupBy}\`` : 'Unknown', inline: true },
     ],
     footer: 'Torque Logger',
   });

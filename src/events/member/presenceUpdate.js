@@ -1,7 +1,7 @@
 import { ActivityType, Events } from 'discord.js';
 import { dispatch } from '../../services/logDispatcher.js';
 import { trackPresence } from '../../services/sessionTracker.js';
-import { buildPayload, listField, timestampField, userField } from '../../utils/embedBuilder.js';
+import { buildPayload, listField, timestampField, userField, userLabel } from '../../utils/embedBuilder.js';
 import { LogChannelKeys, PresenceStatus, Emojis } from '../../utils/constants.js';
 import logger from '../../utils/logger.js';
 
@@ -58,7 +58,7 @@ export async function execute(client, oldPresence, newPresence) {
     const newInfo = PresenceStatus[newStatus] ?? PresenceStatus.offline;
 
     const overview = [
-      `${newInfo.emoji} Presence update captured for ${newPresence.user}.`,
+      `${newInfo.emoji} Presence update captured for ${userLabel(newPresence.user)}.`,
       oldStatus !== newStatus ? `Transition: ${oldInfo.label} -> ${newInfo.label}` : null,
       customStatusChanged ? `${Emojis.bio} Custom status changed.` : null,
       activitiesChanged ? `${Emojis.activity} Activity list changed.` : null,
