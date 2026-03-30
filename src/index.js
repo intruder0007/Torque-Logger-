@@ -25,7 +25,7 @@ const client = new Client({
     GatewayIntentBits.GuildModeration,   // Audit logs
     GatewayIntentBits.GuildMessages,    // Message updates/deletes
     GatewayIntentBits.MessageContent,    // Privileged: message content logging
-    GatewayIntentBits.GuildVoiceStates,  // Voice activity
+    GatewayIntentBits.GuildVoiceStates,  // Voice activity  
     GatewayIntentBits.GuildInvites,      // Invite tracking
     GatewayIntentBits.GuildWebhooks,     // Webhook monitoring
     GatewayIntentBits.GuildExpressions,  // Emoji/sticker monitoring

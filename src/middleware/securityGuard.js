@@ -1,31 +1,15 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  TORQUE™ — Security Guard Middleware
-//  Applied to every dispatch. Provides:
-//   • Permission validation before sending to a channel
-//   • Payload sanitization (truncation, markdown escaping for embed fields)
-//   • Sliding-window rate limiting per event category per guild
-//   • HMAC-signed audit entries for tamper-evident log trails
-// ─────────────────────────────────────────────────────────────────────────────
-
-import { createHmac }         from 'crypto';
+import { createHmac } from 'crypto';
 import { PermissionFlagsBits } from 'discord.js';
-import { RateLimits }          from '../utils/constants.js';
-import logger                  from '../utils/logger.js';
+import { RateLimits } from '../utils/constants.js';
+import logger from '../utils/logger.js';
 
-// ── HMAC secret (falls back to a bot-token-derived key) ───────────────────────
-const HMAC_SECRET = process.env.HMAC_SECRET
-  ?? createHmac('sha256', 'torque').update(process.env.DISCORD_TOKEN ?? 'torque').digest('hex');
+const HMAC_SECRET =
+  process.env.HMAC_SECRET ??
+  createHmac('sha256', 'torque').update(process.env.DISCORD_TOKEN ?? 'torque').digest('hex');
 
-// ── Sliding-window rate limiter ───────────────────────────────────────────────
-// Map<`${guildId}:${channelKey}`, timestamp[]>
 const rateBuckets = new Map();
-
-// Map<guildId, blockedUntil timestamp>  — per-guild burst-block
 const burstBlocked = new Map();
 
-/**
- * Returns true if the event should be allowed through for this guild+key combo.
- */
 function checkRateLimit(guildId, channelKey) {
   const blocked = burstBlocked.get(guildId);
   if (blocked && Date.now() < blocked) return false;
@@ -35,111 +19,144 @@ function checkRateLimit(guildId, channelKey) {
   const bucketKey = `${guildId}:${channelKey}`;
   const now = Date.now();
 
-  const timestamps = (rateBuckets.get(bucketKey) ?? []).filter(t => now - t < limit.windowMs);
+  const timestamps = (rateBuckets.get(bucketKey) ?? []).filter((t) => now - t < limit.windowMs);
   timestamps.push(now);
   rateBuckets.set(bucketKey, timestamps);
 
   if (timestamps.length > limit.max * 5) {
-    // Burst detected — block this guild for 60 seconds
     burstBlocked.set(guildId, now + 60_000);
-    logger.warn(`[SecurityGuard] Burst detected for ${guildId}:${channelKey} — blocked 60s`);
+    logger.warn(`[SecurityGuard] Burst detected for ${guildId}:${channelKey}; blocked 60s`);
     return false;
   }
 
   return timestamps.length <= limit.max;
 }
 
-// ── Permission validator ───────────────────────────────────────────────────────
-/**
- * Returns true if the bot has the minimum permissions needed to post embeds.
- */
 async function hasRequiredPermissions(channel, botMember) {
   if (!channel?.isTextBased()) return false;
   const perms = channel.permissionsFor(botMember);
   if (!perms) return false;
+
   return perms.has([
     PermissionFlagsBits.ViewChannel,
     PermissionFlagsBits.SendMessages,
-    PermissionFlagsBits.EmbedLinks,
     PermissionFlagsBits.ReadMessageHistory,
   ]);
 }
 
-// ── Sanitize embed field values ────────────────────────────────────────────────
-const MAX_FIELD_VALUE = 1020;
-const MAX_DESCRIPTION = 4090;
-
-/**
- * Truncates embed field values exceeding Discord limits.
- * Strips raw null bytes that would cause API rejection.
- */
-export function sanitizeEmbed(embed) {
-  const data = embed.toJSON();
-
-  if (data.description && data.description.length > MAX_DESCRIPTION) {
-    data.description = data.description.slice(0, MAX_DESCRIPTION) + '\n`… truncated`';
-  }
-
-  if (data.fields) {
-    data.fields = data.fields.map(f => ({
-      ...f,
-      name:  (f.name  ?? 'Field').slice(0, 255).replace(/\0/g, ''),
-      value: (f.value ?? '\u200B').slice(0, MAX_FIELD_VALUE).replace(/\0/g, '') || '\u200B',
-    }));
-  }
-
-  // Re-build from raw data — embed is returned as a plain object for channel.send()
-  return data;
+function sanitizeString(value, max) {
+  const text = String(value ?? '').replace(/\0/g, '');
+  if (text.length <= max) return text;
+  return `${text.slice(0, Math.max(0, max - 14))}... truncated`;
 }
 
-// ── HMAC Audit Trail ──────────────────────────────────────────────────────────
-/**
- * Produces a short HMAC signature for an event payload.
- * Written to Winston logs so logs can be verified for tampering.
- */
+function sanitizeComponent(component) {
+  if (!component || typeof component !== 'object') return component;
+
+  const clone = { ...component };
+
+  if (typeof clone.content === 'string') clone.content = sanitizeString(clone.content, 4000);
+  if (typeof clone.label === 'string') clone.label = sanitizeString(clone.label, 80);
+  if (typeof clone.description === 'string') clone.description = sanitizeString(clone.description, 1024);
+  if (typeof clone.custom_id === 'string') clone.custom_id = sanitizeString(clone.custom_id, 100);
+
+  if (clone.media && typeof clone.media === 'object') {
+    clone.media = { ...clone.media };
+    if (typeof clone.media.url === 'string') clone.media.url = sanitizeString(clone.media.url, 2048);
+  }
+
+  if (Array.isArray(clone.components)) {
+    clone.components = clone.components.map(sanitizeComponent);
+  }
+
+  if (Array.isArray(clone.items)) {
+    clone.items = clone.items.map(sanitizeComponent);
+  }
+
+  if (clone.accessory && typeof clone.accessory === 'object') {
+    clone.accessory = sanitizeComponent(clone.accessory);
+  }
+
+  return clone;
+}
+
+function sanitizeEmbeds(embeds = []) {
+  return embeds.slice(0, 10).map((embed) => {
+    const data = typeof embed?.toJSON === 'function' ? embed.toJSON() : { ...embed };
+
+    if (typeof data.title === 'string') data.title = sanitizeString(data.title, 256);
+    if (typeof data.description === 'string') data.description = sanitizeString(data.description, 4096);
+
+    if (Array.isArray(data.fields)) {
+      data.fields = data.fields.slice(0, 25).map((field) => ({
+        ...field,
+        name: sanitizeString(field?.name || 'Field', 256),
+        value: sanitizeString(field?.value || '\u200B', 1024) || '\u200B',
+      }));
+    }
+
+    if (data.footer?.text) {
+      data.footer = { ...data.footer, text: sanitizeString(data.footer.text, 2048) };
+    }
+
+    return data;
+  });
+}
+
+export function sanitizePayload(payload) {
+  const sanitized = { ...payload };
+
+  if (typeof sanitized.content === 'string') {
+    sanitized.content = sanitizeString(sanitized.content, 2000);
+  }
+
+  if (Array.isArray(sanitized.components)) {
+    sanitized.components = sanitized.components.map(sanitizeComponent);
+  }
+
+  if (Array.isArray(sanitized.embeds)) {
+    sanitized.embeds = sanitizeEmbeds(sanitized.embeds);
+  }
+
+  return sanitized;
+}
+
 export function signAuditEntry(payload) {
   const raw = JSON.stringify({ ts: Date.now(), ...payload });
   const sig = createHmac('sha256', HMAC_SECRET).update(raw).digest('hex').slice(0, 16);
   return `SIG-${sig}`;
 }
 
-// ── Main guard export ─────────────────────────────────────────────────────────
-/**
- * Runs all security checks before a log embed is dispatched.
- *
- * @returns {{ allowed: boolean, reason?: string, sanitizedEmbed?: object }}
- */
-export async function guardDispatch(channel, botMember, guildId, channelKey, embed) {
-  // 1. Permission check
+export async function guardDispatch(channel, botMember, guildId, channelKey, payload) {
   const hasPerms = await hasRequiredPermissions(channel, botMember);
   if (!hasPerms) {
     logger.warn(`[SecurityGuard] Missing perms in channel ${channel?.id} for ${guildId}`);
     return { allowed: false, reason: 'missing_permissions' };
   }
 
-  // 2. Rate limit
   if (!checkRateLimit(guildId, channelKey)) {
     logger.debug(`[SecurityGuard] Rate-limited: ${guildId}:${channelKey}`);
     return { allowed: false, reason: 'rate_limited' };
   }
 
-  // 3. Sanitize embed
-  const sanitizedEmbed = sanitizeEmbed(embed);
+  const sanitizedPayload = sanitizePayload(payload);
+  const sig = signAuditEntry({
+    guildId,
+    channelKey,
+    title: payload?.torqueMeta?.title || sanitizedPayload?.embeds?.[0]?.title || 'Torque Log',
+  });
 
-  // 4. Sign audit entry
-  const sig = signAuditEntry({ guildId, channelKey, embedTitle: sanitizedEmbed.title });
   logger.debug(`[SecurityGuard] Dispatch allowed ${sig}`);
-
-  return { allowed: true, sanitizedEmbed };
+  return { allowed: true, sanitizedPayload };
 }
 
-// ── Cleanup stale rate buckets every 5 minutes ────────────────────────────────
 setInterval(() => {
   const now = Date.now();
+
   for (const [key, timestamps] of rateBuckets) {
-    // Remove if all timestamps are older than 60s
-    if (timestamps.every(t => now - t > 60_000)) rateBuckets.delete(key);
+    if (timestamps.every((t) => now - t > 60_000)) rateBuckets.delete(key);
   }
+
   for (const [guildId, until] of burstBlocked) {
     if (now > until) burstBlocked.delete(guildId);
   }
